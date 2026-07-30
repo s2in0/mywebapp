@@ -8,7 +8,7 @@ import streamlit as st
 # 기본 설정
 # ---------------------------------------------------------
 st.set_page_config(
-    page_title="몽글몽글 오늘의 띠 운세",
+    page_title="몽글몽글 띠별 운세",
     page_icon="🔮",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -420,6 +420,12 @@ def make_fortune(zodiac: str) -> dict:
     color_index = fixed_index(f"{date_key}|{zodiac}|color", len(LUCKY_COLORS))
     result["lucky_color"] = LUCKY_COLORS[color_index]
     result["lucky_number"] = fixed_index(f"{date_key}|{zodiac}|number", 99) + 1
+
+    match_candidates = [name for name in ZODIACS if name != zodiac]
+    result["match_zodiac"] = match_candidates[
+        fixed_index(f"{date_key}|{zodiac}|match", len(match_candidates))
+    ]
+
     result["message"] = DAILY_MESSAGES[
         fixed_index(f"{date_key}|{zodiac}|message", len(DAILY_MESSAGES))
     ]
@@ -445,7 +451,7 @@ def fortune_card(icon: str, title: str, score: int, description: str) -> str:
 # ---------------------------------------------------------
 # 화면 구성
 # ---------------------------------------------------------
-st.markdown('<div class="main-title">🔮 몽글몽글 오늘의 띠 운세</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-title">🔮 몽글몽글 띠별 운세</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="sub-title">나의 띠를 고르고 오늘 찾아온 행운을 확인해 보세요 ✨</div>',
     unsafe_allow_html=True,
@@ -481,6 +487,16 @@ if st.button("✨ 오늘의 운세 보기 ✨", type="primary"):
     st.balloons()
 
 result = st.session_state.get("fortune_result")
+
+# 이전 버전의 실행 결과가 세션에 남아 있으면 새 형식으로 자동 갱신합니다.
+if (
+    result
+    and result.get("zodiac") == selected_zodiac
+    and result.get("date") == today.isoformat()
+    and "match_zodiac" not in result
+):
+    result = make_fortune(selected_zodiac)
+    st.session_state["fortune_result"] = result
 
 if result and result["zodiac"] == selected_zodiac and result["date"] == today.isoformat():
     st.markdown(
@@ -524,8 +540,10 @@ if result and result["zodiac"] == selected_zodiac and result["date"] == today.is
                     <div class="lucky-value">🎲 {result["lucky_number"]}</div>
                 </div>
                 <div class="lucky-item">
-                    <div class="lucky-label">오늘의 띠</div>
-                    <div class="lucky-value">{animal["emoji"]} {selected_zodiac}</div>
+                    <div class="lucky-label">오늘의 찰떡궁합</div>
+                    <div class="lucky-value">
+                        💞 {ZODIACS[result["match_zodiac"]]["emoji"]} {result["match_zodiac"]}
+                    </div>
                 </div>
             </div>
         </div>
